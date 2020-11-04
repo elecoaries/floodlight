@@ -6,11 +6,11 @@ import org.projectfloodlight.openflow.protocol.OFFactory;
 import org.projectfloodlight.openflow.protocol.match.Match;
 import org.projectfloodlight.openflow.protocol.match.MatchField;
 
-public class LEPC {
+public class LPEC {
 
 	public Match match;
 	
-	public LEPC (OFFactory factory, IPv4 pkt) {
+	public LPEC (OFFactory factory, IPv4 pkt) {
 		match = factory.buildMatchV3()
 				.setExact(MatchField.IPV4_SRC, pkt.getSourceAddress())
 				.build();
@@ -22,11 +22,11 @@ public class LEPC {
             return true; 
         } 
   
-        if (!(o instanceof LEPC)) { 
+        if (!(o instanceof LPEC)) { 
             return false; 
         } 
         
-        LEPC l = (LEPC) o;
+        LPEC l = (LPEC) o;
         
         return match.equals(l.match);
         

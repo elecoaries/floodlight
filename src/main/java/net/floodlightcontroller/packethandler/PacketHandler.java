@@ -9,6 +9,7 @@ import java.util.Map;
 import org.projectfloodlight.openflow.protocol.OFFactories;
 import org.projectfloodlight.openflow.protocol.OFFactory;
 import org.projectfloodlight.openflow.protocol.OFMessage;
+import org.projectfloodlight.openflow.protocol.OFPacketIn;
 import org.projectfloodlight.openflow.protocol.OFRequest;
 import org.projectfloodlight.openflow.protocol.OFStatsReply;
 import org.projectfloodlight.openflow.protocol.OFStatsRequest;
@@ -32,9 +33,11 @@ import net.floodlightcontroller.core.module.FloodlightModuleContext;
 import net.floodlightcontroller.core.module.FloodlightModuleException;
 import net.floodlightcontroller.core.module.IFloodlightModule;
 import net.floodlightcontroller.core.module.IFloodlightService;
+import net.floodlightcontroller.forwarding.Forwarding;
 import net.floodlightcontroller.packet.ARP;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.IPv4;
+import net.floodlightcontroller.routing.IRoutingDecision;
 
 
 
@@ -45,7 +48,7 @@ public class PacketHandler implements IOFMessageListener, IOFMessageWriter,
 	protected IFloodlightProviderService floodlightProvider;
 	protected static Logger logger;
 	protected OFFactory my13Factory;
-	protected Map<LEPC, FSM> map;
+	protected Map<LPEC, FSM> map;
 	protected Integer count;
 	
 
@@ -92,7 +95,7 @@ public class PacketHandler implements IOFMessageListener, IOFMessageWriter,
 	    floodlightProvider = context.getServiceImpl(IFloodlightProviderService.class);
 	    logger = LoggerFactory.getLogger(PacketHandler.class);
 	    my13Factory =OFFactories.getFactory(OFVersion.OF_13);
-	    map = new HashMap<LEPC, FSM>();
+	    map = new HashMap<LPEC, FSM>();
 	    count = 0;
 	    
 	}
@@ -137,16 +140,17 @@ public class PacketHandler implements IOFMessageListener, IOFMessageWriter,
                 IFloodlightProviderService.bcStore.get(cntx,
                                             IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
         
-        
+        //Forwarding f;
+        //f.processPacketInMessage(sw, (OFPacketIn) msg, (IRoutingDecision) DROP, cntx);
         
         if (eth.getEtherType() == EthType.IPv4) {
         	IPv4 ipv4 = (IPv4) eth.getPayload();
         	count ++;
         	
-        	LEPC lepc = new LEPC(my13Factory, ipv4);
-        	if (!map.containsKey(lepc)) {
+        	LPEC lpec = new LPEC(my13Factory, ipv4);
+        	if (!map.containsKey(lpec)) {
         		FSM fsm = new FSM();
-        		map.put(lepc, fsm);
+        		map.put(lpec, fsm);
         	}
         	
         	String eventName = "infected";
@@ -154,7 +158,7 @@ public class PacketHandler implements IOFMessageListener, IOFMessageWriter,
         	if (count > 3 && count < 6)
         		eventValue = true;
         	
-        	String action = map.get(lepc).eventHandler(eventName, eventValue);
+        	String action = map.get(lpec).eventHandler(eventName, eventValue);
         	
         	logger.info("> IPV4 {} : {}", count, action);
         	
