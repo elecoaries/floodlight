@@ -2,12 +2,15 @@ package net.floodlightcontroller.packethandler;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.projectfloodlight.openflow.protocol.OFFactories;
 import org.projectfloodlight.openflow.protocol.OFFactory;
+import org.projectfloodlight.openflow.protocol.OFFlowAdd;
+import org.projectfloodlight.openflow.protocol.OFFlowMod;
 import org.projectfloodlight.openflow.protocol.OFMessage;
 import org.projectfloodlight.openflow.protocol.OFPacketIn;
 import org.projectfloodlight.openflow.protocol.OFRequest;
@@ -15,9 +18,14 @@ import org.projectfloodlight.openflow.protocol.OFStatsReply;
 import org.projectfloodlight.openflow.protocol.OFStatsRequest;
 import org.projectfloodlight.openflow.protocol.OFType;
 import org.projectfloodlight.openflow.protocol.OFVersion;
+import org.projectfloodlight.openflow.protocol.action.OFAction;
 import org.projectfloodlight.openflow.protocol.match.Match;
 import org.projectfloodlight.openflow.protocol.match.MatchField;
 import org.projectfloodlight.openflow.types.EthType;
+import org.projectfloodlight.openflow.types.IPv4Address;
+import org.projectfloodlight.openflow.types.MacAddress;
+import org.projectfloodlight.openflow.types.OFPort;
+import org.projectfloodlight.openflow.types.TableId;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +52,9 @@ import net.floodlightcontroller.routing.IRoutingDecision;
 public class PacketHandler implements IOFMessageListener, IOFMessageWriter,
 		IFloodlightModule {
 	
+	public static final int NULL = -1;
+	public static final int IDENTIFY = 0;
+	public static final int DROP = 1;
 	
 	protected IFloodlightProviderService floodlightProvider;
 	protected static Logger logger;
@@ -140,9 +151,33 @@ public class PacketHandler implements IOFMessageListener, IOFMessageWriter,
                 IFloodlightProviderService.bcStore.get(cntx,
                                             IFloodlightProviderService.CONTEXT_PI_PAYLOAD);
         
+        // TODO: update policies in switches
+        // ------ add policy in switch -- packout - create a rule
+        // rule - could set time out
+        
         //Forwarding f;
         //f.processPacketInMessage(sw, (OFPacketIn) msg, (IRoutingDecision) DROP, cntx);
         
+
+        /*
+        Match match = my13Factory.buildMatchV3()
+        		//.setExact(MatchField.ETH_SRC, MacAddress.of("00:00:00:00:00:01"))
+        		//.setExact(MatchField.ETH_SRC, MacAddress.of("00:00:00:00:00:02"))
+        		.setExact(MatchField.ETH_TYPE, EthType.IPv4)
+        		.setExact(MatchField.IPV4_SRC, IPv4Address.of("10.0.0.1"))
+        		.setExact(MatchField.IPV4_DST, IPv4Address.of("10.0.0.2"))
+        		.build();
+        OFFlowMod flowMod = (OFFlowMod) my13Factory.buildFlowModify()
+        		.setMatch(match)
+        		.setHardTimeout((short)0)
+        		.setIdleTimeout((short)0)
+        		.setPriority(Short.MAX_VALUE)
+        		//.setActions(Collections.singletonList((OFAction) my13Factory.actions().output(OFPort.ANY, 0xffFFffFF)))
+        		.build();
+        sw.write(flowMod);
+        */
+        
+     
         if (eth.getEtherType() == EthType.IPv4) {
         	IPv4 ipv4 = (IPv4) eth.getPayload();
         	count ++;
@@ -153,29 +188,75 @@ public class PacketHandler implements IOFMessageListener, IOFMessageWriter,
         		map.put(lpec, fsm);
         	}
         	
-        	String eventName = "infected";
+        	//String eventName = "infected";
+        	int action;
         	boolean eventValue = false;
         	if (count > 3 && count < 6)
         		eventValue = true;
         	
-        	String action = map.get(lpec).eventHandler(eventName, eventValue);
+        	action = map.get(lpec).eventHandler("infected", eventValue);
         	
-        	logger.info("> IPV4 {} : {}", count, action);
+        	action = map.get(lpec).getAction();
+        	switch (action) {
+        		case IDENTIFY:
+        		{
+                    OFFlowMod flowMod = (OFFlowMod) my13Factory.buildFlowModify()
+                    		.setMatch(lpec.match)
+                    		.setHardTimeout((short)1)
+                    		.setIdleTimeout((short)1)
+                    		.setPriority(Short.MAX_VALUE)
+                    		.setActions(Collections.singletonList((OFAction) my13Factory.actions().output(OFPort.FLOOD, 0xffFFffFF)))
+                    		.build();
+                    sw.write(flowMod);
+        			break;
+        		}
+	        	case DROP: 
+	        	{
+                    OFFlowMod flowMod = (OFFlowMod) my13Factory.buildFlowModify()
+                    		.setMatch(lpec.match)
+                    		.setHardTimeout((short)0)
+                    		.setIdleTimeout((short)0)
+                    		.setPriority(Short.MAX_VALUE)
+                    		.build();
+                    sw.write(flowMod);
+        			break;
+	        	}
+	        	case NULL:
+	        		break;
+        		default:
+        			break;
+        	}
         	
-        	if (action == "drop")
-        		return Command.STOP;
+        	/*
+            OFFlowMod flowMod = (OFFlowMod) my13Factory.buildFlowModify()
+            		.setMatch(lpec.match)
+            		.setHardTimeout((short)0)
+            		.setIdleTimeout((short)0)
+            		.setPriority(Short.MAX_VALUE)
+            		//.setActions(Collections.singletonList((OFAction) my13Factory.actions().output(OFPort.ANY, 0xffFFffFF)))
+            		.build();
+            sw.write(flowMod);
+        	*/
         	
 //        	Match packetInMatch = my13Factory.buildMatchV3()
 //        			.setExact(MatchField.IPV4_SRC, ipv4.getSourceAddress())
 //        			.setExact(MatchField.IPV4_DST, ipv4.getDestinationAddress())
 //        			.build();
         	
-        	logger.info("> IPV4 {} : {}", count, ipv4.getSourceAddress());
+        	logger.info("> IPV4 {}", action);
+        	logger.info("> IPV4 {}", count);
+        	logger.info("> IPV4 {} -> {}", ipv4.getSourceAddress(), ipv4.getDestinationAddress());
+        	
+        	 
+        	
+        	return Command.CONTINUE;
         	
         } else if (eth.getEtherType() == EthType.ARP) {
         	ARP arp = (ARP) eth.getPayload();
             logger.info("> ARP");
         }
+        
+       
 
         return Command.CONTINUE;
 	}

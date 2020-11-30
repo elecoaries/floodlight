@@ -41,16 +41,26 @@ public class FSM extends AFSM {
 	
 	
 	@Override
-	public String eventHandler(String eventName, boolean eventValue) {
+	public int eventHandler(String eventName, boolean eventValue) {
 		state = state.event(eventName, eventValue);
 		if (state == State.INITIAL) {
-			return "identify";
+			return IDENTIFY;
 		} else if (state == State.INFECTED) {
-			return "drop";
+			return DROP;
 		}
-		return "null";
+		return NULL;
 	}
 
+
+	@Override
+	public int getAction() {
+		if (state == State.INITIAL) {
+			return IDENTIFY;
+		} else if (state == State.INFECTED) {
+			return DROP;
+		}
+		return NULL;
+	}
 
 }
 
