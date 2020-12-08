@@ -43,3 +43,10 @@ On your own machine:
         Then you can start mininet (need to use OpenFlow13) to test it
             i.e. sudo mn --topo single,3 --controller=remote,ip=127.0.0.1,port=6653 --switch ovsk,protocols=OpenFlow13
         Source code is located under src/main/java/net.floodlightcontroller.packethandler
+
+## Generate SMV files from FSM.java
+
+    Use terminal and go to the location of SMV_Generator.java (should be in `floodlight/smv_gen`)
+    Run `javac SMV_Generator.java` to compile.
+    Run `java SMV_Generator FSM.java > FSM.smv` to parse and generate the smv file from the FSM.java file in the same directory.
+    Alternatively, supply a different FSM.java file by specifying the file path in the first argument.
