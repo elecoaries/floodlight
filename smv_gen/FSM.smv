@@ -1,0 +1,16 @@
+MODULE main
+	VAR
+		state:{INITIAL,INFECTED};
+		infected: boolean;
+	ASSIGN
+		init(state):=INITIAL;
+		init(infected):= FALSE;
+		next(infected):=
+			case
+				TRUE:{FALSE,TRUE};
+			esac;
+		next(state):=
+			case
+				infected : INFECTED;
+				TRUE : INITIAL;
+			esac;

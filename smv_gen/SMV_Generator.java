@@ -1,5 +1,3 @@
-package net.floodlightcontroller.packethandler;
-
 import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
