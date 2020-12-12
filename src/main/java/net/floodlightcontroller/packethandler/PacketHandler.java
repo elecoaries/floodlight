@@ -191,7 +191,7 @@ public class PacketHandler implements IOFMessageListener, IOFMessageWriter,
         	//String eventName = "infected";
         	int action;
         	boolean eventValue = false;
-        	if (count > 3)
+        	if (count > 3 && count < 5)
         		eventValue = true;
         	
         	action = map.get(lpec).eventHandler("infected", eventValue);
@@ -214,7 +214,7 @@ public class PacketHandler implements IOFMessageListener, IOFMessageWriter,
 	        	{
                     OFFlowMod flowMod = (OFFlowMod) my13Factory.buildFlowModify()
                     		.setMatch(lpec.match)
-                    		.setHardTimeout((short)0)
+                    		.setHardTimeout((short)1)
                     		.setIdleTimeout((short)0)
                     		.setPriority(Short.MAX_VALUE)
                     		.build();
